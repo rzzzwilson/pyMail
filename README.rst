@@ -5,7 +5,8 @@ The code here is purely exploratory.
 This is a Python+wxPython desktop application that runs under Linux, OSX
 and Windows (7, at least).
 
-It is possible I'll use pySide instead of wxPython.  We'll see.
+We'll use PySide.  This means we can use Python 3.  I've waited long enough
+for wxPython to be compatible with Python 3.
 
 The aim is to have enough functionality to replace my use of Thunderbird.
 With Mozilla disowning Thunderbird it's probably time to move on.  I can't
@@ -14,14 +15,18 @@ here and see if the idea goes anywhere.
 
 Requirements
 ------------
-* Python+wxPython.  This assumes python 2.7 and appropriate wxPython as
-  wxPython for python 3 is not yet ready.  If pySide then maybe python 3.
+* Python+RPySide+Python 3.
 * IMAP+SMTP protocol, targetted initially at GMail.
 * Associated address book.
 * Handle HTML email plus attachments.
 * Address book has functionality close to that in Thunderbird.
 * Save config and address book to separate files in a near-text form.
 * The UI dedicates the maximum space to displaying the email body.
+
+Will need to check Python 3 compatability with other requirements such as:
+
+* imaplib
+* email
 
 Nice to have?
 -------------
@@ -64,14 +69,17 @@ Main Screen
 The app will be driven by toolbar and menu.  Possibly also right-click
 operations on individual headers.
 
-We use a two pane view instead of the Thunderbird (and others) approach.
-In that approach one pane is only to select a mailbox.  We can do that through
-the toolbar.
+We use a two pane view instead of the Thunderbird (and others) three pane
+approach.  In that approach one pane is only to select a mailbox.  We can do
+that through the toolbar.
 
 What do we do if an email body has both plain text and HTML payloads?  Display
 both, plain text only or HTML only?
 
 How do we display/action attachments?
+
+The hardest part that I see (so far) is rendering the email body, including
+attachments (if any).
 
 Address Book
 ------------
@@ -86,9 +94,6 @@ The address book will contain the following fields:
 * Birthday
 * Residential Address
 * Photo?
-* 
-* 
-* 
 
 There may be two (or more) address books.  One will be **the** address book.
 The other will be a "collected" address book.  Receiving an email will
@@ -106,6 +111,8 @@ address is typed (a la Thunderbird).
 
 Must be able to send email in plain text as well as HTML.  The default should
 be configurable.  Of course, sending in HTML will also send a plain text copy.
+The question now is how much *HTML stuff* should we allow the email composer to
+fiddle with.
 
 Must be able to attach files.
 
