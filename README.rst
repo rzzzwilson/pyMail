@@ -71,7 +71,8 @@ operations on individual headers.
 
 We use a two pane view instead of the Thunderbird (and others) three pane
 approach.  In that approach one pane is only to select a mailbox.  We can do
-that through the toolbar.
+that through the toolbar.  Have two "buttons" in the toolbar, the left-most
+showing the server and the second showing the mailbox.
 
 What do we do if an email body has both plain text and HTML payloads?  Display
 both, plain text only or HTML only?
@@ -149,7 +150,7 @@ We will approach a final product in stages:
 * etc, ...
 
 We will use the GitHub issue system to control this.  The open issue with a
-title starting **TARGET:** will be contain the target state we are currently
+title starting **TARGET:** will contain the target state we are currently
 aiming for.
 
 If successful, expand pyMail to handle more than one mail server.  How are we
