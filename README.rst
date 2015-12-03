@@ -15,7 +15,7 @@ here and see if the idea goes anywhere.
 
 Requirements
 ------------
-* Python+RPySide+Python 3.
+* Python+PySide+Python 3.
 * IMAP+SMTP protocol, targetted initially at GMail.
 * Associated address book.
 * Handle HTML email plus attachments.
@@ -81,6 +81,9 @@ How do we display/action attachments?
 The hardest part that I see (so far) is rendering the email body, including
 attachments (if any).
 
+How much state do we maintain between app invocations?  Do we remember which
+email header+body is being displayed?
+
 Address Book
 ------------
 The address book will contain the following fields:
@@ -100,7 +103,7 @@ The other will be a "collected" address book.  Receiving an email will
 automatically put the received address into the "collected" address book.  It
 will be possible to move one or more entries from "collected" to "main".
 
-The address book should be kept on-disk in a form that lends itself to moving
+The address books should be kept on-disk in a form that lends itself to moving
 address book data to another application.  Could have small apps that dump
 the address book in various forms.
 
@@ -112,7 +115,7 @@ address is typed (a la Thunderbird).
 Must be able to send email in plain text as well as HTML.  The default should
 be configurable.  Of course, sending in HTML will also send a plain text copy.
 The question now is how much *HTML stuff* should we allow the email composer to
-fiddle with.
+fiddle with.  Bold/Italic/URL...?
 
 Must be able to attach files.
 
@@ -125,8 +128,32 @@ pane.
 
 We will need to read emails in 'newest first' mode.
 
-Enhancements
-------------
-If successful, expand pyMail to handle more than one mail server.  Either allow
-the user to select the server or automatically combine all emails from all
-servers.
+Roadmap
+-------
+We will approach a final product in stages:
+
+* Display 10 latest headers of INBOX
+* Display *all* headers in INBOX, on-demand while scrolling
+* Allow user to select other mailbox, display headers
+* Display unread email headers in bold, IMAP supports 'unread' attribute?
+* Display simple text email body
+* Display simple email body with attachment(s)
+* Display HTML email body
+* Display HTML email body with attachments(s)
+* Allow right-click operations on header: delete, mark unread, move to ..., etc
+* Allow compose and send of new email (no HTML or attachments)
+* Allow attachments in new email
+* Allow user to reply to email
+* New email automatically populates the collected address book
+* Email compose uses address books to autocomplete **To:** field
+* etc, ...
+
+We will use the GitHub issue system to control this.  The open issue with a
+title starting **TARGET:** will be contain the target state we are currently
+aiming for.
+
+If successful, expand pyMail to handle more than one mail server.  How are we
+going to handle this:
+
+* Mail from all servers goes into header pane
+* Select server and repopulate display panes
