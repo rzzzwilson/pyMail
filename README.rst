@@ -2,7 +2,7 @@ pyMail
 ======
 The code here is purely exploratory.
 
-This is a Python+wxPython desktop application that runs under Linux, OSX
+This is a Python+PySide desktop application that runs under Linux, OSX
 and Windows (7, at least).
 
 We'll use PySide.  This means we can use Python 3.  I've waited long enough
