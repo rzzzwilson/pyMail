@@ -2,10 +2,10 @@ pyMail
 ======
 The code here is purely exploratory.
 
-This is a Python+PySide desktop application that runs under Linux, OSX
+This is a Python+PyQt5 desktop application that runs under Linux, OSX
 and Windows (7, at least).
 
-We'll use PySide.  This means we can use Python 3.  I've waited long enough
+We'll use PyQt5.  This means we can use Python 3.  I've waited long enough
 for wxPython to be compatible with Python 3.
 
 The aim is to have enough functionality to replace my use of Thunderbird.
@@ -15,8 +15,8 @@ here and see if the idea goes anywhere.
 
 Requirements
 ------------
-* Python+PySide+Python 3.
-* IMAP+SMTP protocol, targetted initially at GMail.
+* Python3+PyQt5.
+* IMAP+SMTP protocol, targetted initially at GMail servers.
 * Associated address book.
 * Handle HTML email plus attachments.
 * Address book has functionality close to that in Thunderbird.
@@ -71,8 +71,15 @@ operations on individual headers.
 
 We use a two pane view instead of the Thunderbird (and others) three pane
 approach.  In that approach one pane is only to select a mailbox.  We can do
-that through the toolbar.  Have two "buttons" in the toolbar, the left-most
-showing the server and the second showing the mailbox.
+that through the toolbar.
+
+The toolbar will have:
+
+* two "buttons" in the toolbar to select server and mailbox.
+  The left-most shows the server and the second shows the mailbox.
+* a "delete" button to delete currently selected email
+* a "reply" button ...
+* a "forward" button ...
 
 What do we do if an email body has both plain text and HTML payloads?  Display
 both, plain text only or HTML only?
