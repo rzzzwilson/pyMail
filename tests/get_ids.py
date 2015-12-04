@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import imaplib
@@ -7,11 +7,15 @@ import email
 import email.header
 import datetime
 
-EmailAccount = "rzzzwilson@gmail.com"
-EmailBox = "INBOX"
+import logger
+log = logger.Log('test.log', logger.Log.DEBUG)
+
+
+EmailAccount = u'rzzzwilson@gmail.com'
+EmailBox = u'INBOX'
 
 InitialNumber = 20
-MBPrefix = '(\\HasNoChildren) "/" "'
+MBPrefix = bytes('(\\HasNoChildren) "/" "', 'utf-8')
 
 
 def get_email_header(M, num, data):
@@ -24,16 +28,10 @@ def get_email_header(M, num, data):
     Returns a tuple (subject, datetime).
     """
 
-    msg = email.message_from_string(data[0][1])
+    s = str(data[0][1], 'utf-8')
+    msg = email.message_from_string(s)
     decode = email.header.decode_header(msg['Subject'])[0]
-    try:
-        subject = unicode(decode[0])
-    except UnicodeDecodeError as e:
-        if 'ordinal not in range' in e.reason:
-            # looks like subject is already unicode?
-            subject = decode[0]
-        else:
-            raise
+    subject = decode[0]
 
     # Now convert to local date-time
     date_tuple = email.utils.parsedate_tz(msg['Date'])
@@ -42,10 +40,8 @@ def get_email_header(M, num, data):
         local_date = datetime.datetime.fromtimestamp(email.utils.mktime_tz(date_tuple))
 
     # remove extraneous stuff in subject
-    ndx = subject.find('\n')
-    if ndx >= 0:
-        subject = subject[:ndx]
-#    subject = subject.replace('\r', '')
+    subject = subject.replace('\n', ' ')
+    subject = subject.replace('\r ', '')
 
     return (subject, local_date)
 
@@ -57,7 +53,7 @@ def process_mailbox(M):
 
     (rv, data) = M.search(None, "ALL")
     if rv != 'OK':
-        print "No messages found!"
+        print('No messages found!')
         return
 
     ids = data[0].split()[-InitialNumber:]
@@ -70,7 +66,7 @@ def process_mailbox(M):
             return
         (subject, time) = get_email_header(M, num, data)
         local_time = time.strftime('%a, %d %b %Y %H:%M:%S')
-        print('Email %s:%s\t%s' % (num, subject, time))
+        print('Email %04d:%s\t%s' % (int(num), subject, time))
 
 
 M = imaplib.IMAP4_SSL('imap.gmail.com')
@@ -83,8 +79,9 @@ except imaplib.IMAP4.error:
 
 (rv, mailboxes) = M.list()
 if rv == 'OK':
-    print "Mailboxes:"
+    print('Mailboxes:')
     for mb in mailboxes:
+        print('mb=%s, type(mb)=%s' % (mb, type(mb)))
         if mb.startswith(MBPrefix):
             mb_name = mb[len(MBPrefix):-1]
             print('mb=%s, mb_name=%s' % (str(mb), mb_name))
@@ -96,6 +93,6 @@ if rv == 'OK':
     process_mailbox(M)
     M.close()
 else:
-    print "ERROR: Unable to open mailbox ", rv
+    print('ERROR: Unable to open mailbox: %s', rv)
 
 M.logout()
