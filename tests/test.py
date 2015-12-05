@@ -7,10 +7,13 @@ import getpass
 import email
 import email.header
 import datetime
+import pickle
+import time
 
 import logger
 log = logger.Log('test.log', logger.Log.DEBUG)
 
+from PyQt5.QtCore import QThread , pyqtSlot, pyqtSignal
 from PyQt5.QtWidgets import QApplication, QInputDialog, QLineEdit, QWidget
 from PyQt5.QtWidgets import QPushButton, QHBoxLayout, QVBoxLayout, QTextEdit
 from PyQt5.QtGui import QIcon
@@ -34,12 +37,16 @@ class EMailServer(object):
             raise Exception('No password supplied')
         self.mail_server = imaplib.IMAP4_SSL(server)
         try:
-            log('.login: EmailAccount=%s, password=%s' % (EmailAccount, password))
+            log('Logging to %s' % EmailAccount)
             (rv, data) = self.mail_server.login(EmailAccount, password)
         except imaplib.IMAP4.error:
             print('LOGIN FAILED!!!')
             sys.exit(1)
         log('Logged in successfuly')
+
+        # now retrieve any saved state
+        self.headers = self.get_saved_headers()
+        log('__init__: self.headers=%s' % str(self.headers))
 
     def get_mailboxes(self):
         """Get a list of avilable mailboxes."""
@@ -89,12 +96,10 @@ class EMailServer(object):
             if rv != 'OK':
                 raise Exception('ERROR getting message %s' % num)
 
-            (num, subject, time) = self.get_email_header(num, data)
-            result.append((num, subject, time))
+            (num, subject, frm, time) = self.get_email_header(num, data)
+            result.append((num, subject, frm, time))
 #            local_time = time.strftime('%a, %d %b %Y %H:%M:%S')
 #            print('Email %04d:%s\t%s' % (int(num), subject, time))
-
-        log('get_headers: returning:\n%s' % str(result))
 
         return result
 
@@ -104,7 +109,7 @@ class EMailServer(object):
         num   unique ID of email message (string)
         data  data returned from a select()
 
-        Returns a tuple (num, subject, datetime).
+        Returns a tuple (num, subject, frm, datetime).
         """
 
         # get email subject
@@ -112,6 +117,8 @@ class EMailServer(object):
         msg = email.message_from_string(s)
         decode = email.header.decode_header(msg['Subject'])[0]
         subject = decode[0]
+        decode = email.header.decode_header(msg['From'])[0]
+        frm = decode[0]
 
         # get datetime convert to local datetime
         dtuple = email.utils.parsedate_tz(msg['Date'])
@@ -123,9 +130,9 @@ class EMailServer(object):
         subject = subject.replace('\n', ' ')
         subject = subject.replace('\r ', '')
 
-        log('get_email_header: returning %s' % str((num, subject, ldt)))
+        log('get_email_header: returning %s' % str((num, subject, frm, ldt)))
 
-        return (num, subject, ldt)
+        return (num, subject, frm, ldt)
 
     def get_password(self):
         (text, ok) = QInputDialog.getText(None, "Attention",
@@ -135,12 +142,29 @@ class EMailServer(object):
         return None
 
     def __del__(self):
-        if self.mail_server:
-            self.mail_server.logout()
-        if self.selected:
-            self.mail_server.close()
+        pass
+
+    def get_saved_headers(self):
+        """Retrieve any saved headers from disk."""
+
+        try:
+            with open('headers.save', 'rb') as fd:
+                return pickle.load(fd)
+        except FileNotFoundError:
+            return []
+
+    def put_saved_headers(self, obj):
+        """Save headers to disk."""
+
+        log('put_saved_headers: Saving obj=%s' % str(obj))
+
+        with open('headers.save', 'wb') as fd:
+            pickle.dump(obj, fd)
+
 
 class Window(QWidget):
+    finished = pyqtSignal(int)
+
     def __init__(self):
         QWidget.__init__(self)
         layout = QVBoxLayout(self)
@@ -157,6 +181,9 @@ class Window(QWidget):
         self.setWindowTitle('Mail Headers')
         self.show()
 
+        self.update_headers(self.email_server.headers)
+        self.start_worker()
+
     def handleTest(self):
         self.edit.setReadOnly(False)
         self.edit.clear()
@@ -164,27 +191,54 @@ class Window(QWidget):
         self.edit.setReadOnly(True)
 
     def refresh(self):
-        hdrs = self.email_server.get_headers(EmailBox, number=10)
-        for (id, header, datetime) in hdrs:
-            self.edit.append(header)
+        headers = self.email_server.get_headers(EmailBox, number=10)
+        log('refresh: headers=%s' % str(headers))
+        self.email_server.put_saved_headers(headers)
+        self.update_headers(headers)
+
+    def update_headers(self, headers):
+        for (id, header, frm, datetime) in headers:
+            self.edit.append(header + ' ' + frm)
+
+    def start_worker(self):
+        log('start_worker: starting')
+        self.thread = QThread()
+        self.finished[int].connect(self.onFinished)
+#        self.moveToThread(self.thread)
+        self.thread.started.connect(self.get_all_headers, 43)
+#        w = Worker()
+#        w.finished[int].connect(self.onFinished)
+#        w.moveToThread(self.thread)
+#        self.thread.started.connect(w.work)
+        self.thread.start()
+
+    @pyqtSlot(int)
+    def onFinished(self, i):
+        log("Base caught finished, {}".format(i))
+        print("Base caught finished, {}".format(i))
+
+    def get_all_headers(self, result=42):
+        log("Worker work")
+        time.sleep(5)
+        self.finished.emit(result)
 
 
 if __name__ == '__main__':
 
-    # our own handler for uncaught exceptions
-    def excepthook(type, value, tb):
-        import traceback
-
-        msg = '\n' + '=' * 80
-        msg += '\nUncaught exception:\n'
-        msg += ''.join(traceback.format_exception(type, value, tb))
-        msg += '=' * 80 + '\n'
-        log(msg)
-        print(msg)
-        sys.exit(1)
-
-    # plug our handler into the python system
-    sys.excepthook = excepthook
+#    # our own handler for uncaught exceptions
+#    def excepthook(type, value, tb):
+#        import traceback
+#
+#        msg = '\n' + '=' * 80
+#        msg += '\nUncaught exception:\n'
+#        msg += ''.join(traceback.format_exception(type, value, tb))
+#        msg += '=' * 80 + '\n'
+#        log(msg)
+#        print(msg)
+#        sys.exit(1)
+#
+#    # plug our handler into the python system
+#    sys.excepthook = excepthook
 
     app = QApplication(sys.argv)
     win = Window()
