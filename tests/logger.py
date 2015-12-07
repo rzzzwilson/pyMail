@@ -167,15 +167,17 @@ class Log(object):
         msec = to.microsecond
 
         # caller information - look back for first module != <this module name>
-        frames = traceback.extract_stack()
-        frames.reverse()
         try:
             (_, mod_name) = __name__.rsplit('.', 1)
         except ValueError:
             mod_name = __name__
+
+        frames = traceback.extract_stack()
+        frames.reverse()
+
         for (fpath, lnum, mname, _) in frames:
             (fname, _) = os.path.basename(fpath).rsplit('.', 1)
-            if fname != mod_name:
+            if fname != mod_name and fname != 'traceback':
                 break
 
         # get string for log level
