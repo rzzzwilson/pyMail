@@ -21,7 +21,6 @@ from PyQt5.QtGui import QIcon
 EmailAccount = u'rzzzwilson@gmail.com'
 EmailBox = u'INBOX'
 
-InitialNumber = 20
 MBPrefix = bytes('(\\HasNoChildren) "/" "', 'utf-8')
 
 
@@ -86,7 +85,7 @@ class EMailServer(object):
             print('No messages found!')
             return
 
-        ids = data[0].split()[-InitialNumber:]
+        ids = data[0].split()
         ids.reverse()
 
         result = []
@@ -100,6 +99,8 @@ class EMailServer(object):
             result.append((num, subject, frm, time))
 #            local_time = time.strftime('%a, %d %b %Y %H:%M:%S')
 #            print('Email %04d:%s\t%s' % (int(num), subject, time))
+
+        log('get_headers: returning %d headers' % len(result))
 
         return result
 
@@ -115,6 +116,8 @@ class EMailServer(object):
         # get email subject
         s = str(data[0][1], 'utf-8')
         msg = email.message_from_string(s)
+        if msg['Subject'] is None:
+            msg['Subject'] = ''
         decode = email.header.decode_header(msg['Subject'])[0]
         subject = decode[0]
         decode = email.header.decode_header(msg['From'])[0]
@@ -168,21 +171,21 @@ class Window(QWidget):
     def __init__(self):
         QWidget.__init__(self)
         layout = QVBoxLayout(self)
-        self.button = QPushButton('Refresh')
+        self.button = QPushButton('Get Messages')
         self.edit = QTextEdit()
         layout.addWidget(self.edit)
         layout.addWidget(self.button)
         self.button.clicked.connect(self.handleTest)
 
         log('About to setup the EMailServer')
-        self.email_server =  EMailServer(EmailAccount)
+        self.email_server = EMailServer(EmailAccount)
 
-        self.setGeometry(300, 300, 600, 300)
+        self.setGeometry(100, 100, 900, 600)
         self.setWindowTitle('Mail Headers')
         self.show()
 
         self.update_headers(self.email_server.headers)
-        self.start_worker()
+#        self.start_worker()
 
     def handleTest(self):
         self.edit.setReadOnly(False)
@@ -190,8 +193,16 @@ class Window(QWidget):
         self.refresh()
         self.edit.setReadOnly(True)
 
-    def refresh(self):
-        headers = self.email_server.get_headers(EmailBox, number=10)
+    def refresh(self, latest=None):
+        """Get all headers after given ID.
+
+        latest  ID of last received email
+        """
+
+        if latest is None:
+            headers = self.email_server.get_headers(EmailBox)
+        else:
+            headers = self.email_server.get_headers(EmailBox)
         log('refresh: headers=%s' % str(headers))
         self.email_server.put_saved_headers(headers)
         self.update_headers(headers)
@@ -203,42 +214,35 @@ class Window(QWidget):
     def start_worker(self):
         log('start_worker: starting')
         self.thread = QThread()
-        self.finished[int].connect(self.onFinished)
-#        self.moveToThread(self.thread)
-        self.thread.started.connect(self.get_all_headers, 43)
-#        w = Worker()
-#        w.finished[int].connect(self.onFinished)
-#        w.moveToThread(self.thread)
-#        self.thread.started.connect(w.work)
+        self.finished[int].connect(self.refresh_box)
+        self.thread.started.connect(self.get_all_headers)
         self.thread.start()
 
     @pyqtSlot(int)
-    def onFinished(self, i):
-        log("Base caught finished, {}".format(i))
-        print("Base caught finished, {}".format(i))
+    def refresh_box(self, i):
+        log("refresh_box: Base caught finished, {}".format(i))
 
     def get_all_headers(self, result=42):
         log("Worker work")
-        time.sleep(5)
+        self.refresh()
         self.finished.emit(result)
 
 
 if __name__ == '__main__':
+    import traceback
 
-#    # our own handler for uncaught exceptions
-#    def excepthook(type, value, tb):
-#        import traceback
-#
-#        msg = '\n' + '=' * 80
-#        msg += '\nUncaught exception:\n'
-#        msg += ''.join(traceback.format_exception(type, value, tb))
-#        msg += '=' * 80 + '\n'
-#        log(msg)
-#        print(msg)
-#        sys.exit(1)
-#
-#    # plug our handler into the python system
-#    sys.excepthook = excepthook
+    # our own handler for uncaught exceptions
+    def excepthook(type, value, tb):
+        msg = '\n' + '=' * 80
+        msg += '\nUncaught exception:\n'
+        msg += ''.join(traceback.format_exception(type, value, tb))
+        msg += '=' * 80 + '\n'
+        log(msg)
+        print(msg)
+        sys.exit(1)
+
+    # plug our handler into the python system
+    sys.excepthook = excepthook
 
     app = QApplication(sys.argv)
     win = Window()
