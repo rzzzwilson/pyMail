@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
 import sys
@@ -113,8 +113,13 @@ class EMailServer(object):
         Returns a tuple (num, subject, frm, datetime).
         """
 
+        #log.dump_hex('Email body, data[0][1]', data[0][1])
+        #log.dump_hex('Email body, data[0]', data[0])
+
         # get email subject
-        s = str(data[0][1], 'utf-8')
+        log.dump_hex('Email body, data[0][1]', data[0][1])
+        #s = str(data[0][1], 'utf-8')
+        s = str(data[0][1], encoding='utf-8', errors='ignore')
         msg = email.message_from_string(s)
         if msg['Subject'] is None:
             msg['Subject'] = ''
@@ -130,6 +135,8 @@ class EMailServer(object):
             ldt = datetime.datetime.fromtimestamp(email.utils.mktime_tz(dtuple))
 
         # remove extraneous stuff in subject
+        log('type(subject)=%s' % type(subject))
+        log('subject=%s' % subject)
         subject = subject.replace('\n', ' ')
         subject = subject.replace('\r ', '')
 

@@ -214,9 +214,58 @@ class Log(object):
 
         self(msg, self.DEBUG)
 
+    def dump_hex(self, msg, data, level=None):
+        """Dump a string as hex.
+
+        msg    'heading' string
+        data   string to dump (bytes)
+        level  logging level
+        """
+
+        HEXLEN = 48
+        CHARLEN = 16
+
+        # get level to log at
+        if level is None:
+            level = self.level
+
+        def hexdump_line(s, offset):
+            """Generate one line of fdump output.
+
+            s       'bytes' to convert (16 bytes or less)
+            offset  offset from start of dump
+            """
+
+            hex = ''
+            char = ''
+            for c in s:
+                # convert to integer, if character was str to begin with
+                try:
+                    ordc = ord(c)
+                except TypeError:
+                    ordc = c        # nope, was byte, already integer
+                hex += '%02x ' % ordc
+                if ord(' ') <= ordc <= ord('~'):
+                    char += chr(ordc)
+                else:
+                    char += '.'
+            hex = (hex + ' '*HEXLEN)[:HEXLEN]
+            char = (char + '|' + ' '*CHARLEN)[:CHARLEN+1]
+            return '%04X  %s |%s  %d' % (offset, hex, char, offset)
+
+        offset = 0
+        dump = []
+        while True:
+            data = data[offset:offset + 16]
+            if len(data) == 0:
+                break
+            dump.append(hexdump_line(data, offset))
+            offset += 16
+
+        self('%s:\n%s' % (msg, '\n'.join(dump)))
+
     def __del__(self):
         """Close the logging."""
 
         self.logfd.close()
         self.logfd = None
-
